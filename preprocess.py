@@ -10,6 +10,7 @@ video_sizes = None
 endpoints = {}
 latency_d = []
 requests = []
+example_name = "kittens"
 
 class Request(object):
 
@@ -20,8 +21,9 @@ class Request(object):
 
 
 def main():
+    global num_videos, num_endpoints, num_request_description, num_cache_server, capacity_each_cache, video_sizes, endpoints, requests, latency_d, example_name
 
-    with open('kittens.in') as f:
+    with open(example_name + '.in') as f:
 
         base_info = f.readline().split()
 
@@ -34,6 +36,7 @@ def main():
 
         # video size per video in list
         video_sizes = f.readline().split()
+        video_sizes = [int(x) for x in video_sizes]
 
         # dict key endpoint index, value -> dict [cache_id] key and latency_ms as value
         endpoints = {}
@@ -49,8 +52,8 @@ def main():
             latency_d.append(int(info[0]))
             K_connections = int(info[1])
 
-            print ("latencty ", latency_d[endpoint_index]),
-            print ("K connectios ", K_connections)
+            #print ("latencty ", latency_d[endpoint_index]),
+            #print ("K connectios ", K_connections)
 
 
             endpoint_caches = {}
@@ -68,5 +71,5 @@ def main():
             requests.append(Request(int(v), int(e), int(n)))
 
 
-
 main()
+print (len(latency_d))
