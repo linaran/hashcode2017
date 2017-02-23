@@ -1,46 +1,79 @@
 import numpy as np
 import sys
 import math
+import pickle
 from collections import namedtuple
 
 
 class Cromosome(object):
-    def __init__(self):
-        self.values = np.random.uniform(-4, 4, 5)
-        self.error = None
+    def __init__(self, initialize=True):
+        self.values = []
+        self.score = None
 
-    def getOutput(self, x, y):
-        b0, b1, b2, b3, b4 = self.values
-        return np.sin(b0 + b1*x) + b2*np.cos(x*(b3+y)) / (1 + np.e**((x-b4)**2))
+        if (not initialize): return
+
+        for i in range(num_cashes):
+            self.values.append(self.init_cashe())
+
+    def evaluate(self):
+        self.score = 0
+        for request in requests:
+            l = ld[request.e]
+            for server in self.values:
+                latency = endpoints[request.e].get(server, None)
+                if latency and latency < l:
+                    l = latency
+            self.score += request.n * (ld-l)
+
+    def init_cashe(self):
+        cashe_size = 0
+        cashe = set()
+        videos = np.random.permutation(num_videos)
+        for video in videos:
+            if cashe_size + videos_sizes[video] <= cash_capacity:
+                cashe.add(video)
+                cashe_size += videos_sizes[video]
+        return cashe
+             
+    def save(self, name):
+        with open(name, 'wb') as handle:
+            pickle.dump(self.values, handle)
+        with open(name + ".txt", 'w') as f:
+            f.write(str(num_cashes) + "\n")
+            for i, server in enumerate(self.values):
+                f.write(str(i))
+                for video in server:
+                    f.write(" " + str(video))
+                f.write("\n")
+
+
 
 class GeneticAlgorithm(object):
 
-    def __init__(self, data, p_m=0.01):
-        self._data = data
+    def __init__(self, example_name, p_m=0.01):
         self._p_m = p_m
         self.best = None
+        self.example_name = example_name
 
     def evaluate(self, population, data):
         for cromosome in population:
-            cromosome.error = np.sum((cromosome.getOutput(data.x, data.y) - data.output)**2) / len(data.x)
+            cromosome.evaluate()
 
     def getBest(self, population):
-        population.sort(key = lambda x: x.error)
-        return population[0]
+        population.sort(key = lambda x: x.score)
+        return population[-1]
 
     def cross(self, parent1, parent2):
-        child = Cromosome()
-        for i in range(len(parent1.values)):
-            if (parent1.values[i] < parent2.values[i]):
-                child.values[i] = np.random.uniform(parent1.values[i], parent2.values[i]);
-            else:
-                child.values[i] = np.random.uniform(parent2.values[i], parent1.values[i]);
+        child = Cromosome(False)
+        r = np.random.randint(0, 2, num_cashes)
+        for i, r_i in enumerate(r):
+            child += [parent1[i]] if r_i == 0 else [parent2[i]]
         return child
     
     def mutate(self, cromosome):
         for i in range(len(cromosome.values)):
             if np.random.uniform(0, 1) <= self._p_m:
-                cromosome.values[i] = np.random.uniform(-4, 4)
+                cromosome.values[i] = self.init_cashe()
     
     def createPopulation(self, size):
         population = []
@@ -55,11 +88,11 @@ class GeneticAlgorithm(object):
         last_best = self.best
         for i in range(iterations):
             best = self.getBest(population)
-            if (best.error < last_best.error):
+            if (best.score > last_best.score):
                 self.best = best
                 last_best = best
-                print best.values, " Generacija: ", i, "Error: ", best.error
-            if best.error <= error_treshold: return best
+                print best.values, " Generacija: ", i, "Score: ", best.score
+                self.best.save(self.example_name)
             population = self.selection(population)
         return self.getBest(population)
 
@@ -80,14 +113,15 @@ class EliminationGeneticAlgorithm(GeneticAlgorithm):
 
     def selection(self, population):
         parents_indexes = self.chooseParents(population)
-        parents_indexes.sort(key = lambda x: population[x].error)
-        child = self.cross(population[parents_indexes[0]], population[parents_indexes[1]])
+        parents_indexes.sort(key = lambda x: population[x].score)
+        child = self.cross(population[parents_indexes[-1]], population[parents_indexes[-2]])
         #print population[parents_indexes[0]].error, population[parents_indexes[1]].error, population[parents_indexes[2]].error
         self.mutate(child)
         self.evaluate([child], self._data)
-        population[parents_indexes[2]] = child
-        if (child.error < self.best.error): self.best = child
+        population[parents_indexes[0]] = child
+        if (child.score > self.best.score): self.best = child
         return population
+
 
 
 
