@@ -72,13 +72,13 @@ class GeneticAlgorithm(object):
         child = Cromosome(False)
         r = np.random.randint(0, 2, data.num_cache_server)
         for i, r_i in enumerate(r):
-            child += [parent1[i]] if r_i == 0 else [parent2[i]]
+            child.values += [parent1.values[i]] if r_i == 0 else [parent2.values[i]]
         return child
     
     def mutate(self, cromosome):
         for i in range(len(cromosome.values)):
             if np.random.uniform(0, 1) <= self._p_m:
-                cromosome.values[i] = self.init_cashe()
+                cromosome.values[i] = cromosome.init_cashe()
     
     def createPopulation(self, size):
         population = []
@@ -98,7 +98,7 @@ class GeneticAlgorithm(object):
             if (best.score > last_best.score):
                 self.best = best
                 last_best = best
-                print (best.values, " Generacija: ", i, "Score: ", best.score)
+                print (" Generacija: ", i, "Score: ", best.score)
                 self.best.save(self.example_name)
             population = self.selection(population)
         return self.getBest(population)
@@ -124,7 +124,7 @@ class EliminationGeneticAlgorithm(GeneticAlgorithm):
         child = self.cross(population[parents_indexes[-1]], population[parents_indexes[-2]])
         #print population[parents_indexes[0]].error, population[parents_indexes[1]].error, population[parents_indexes[2]].error
         self.mutate(child)
-        self.evaluate([child], self._data)
+        self.evaluate([child])
         population[parents_indexes[0]] = child
         if (child.score > self.best.score): self.best = child
         return population
